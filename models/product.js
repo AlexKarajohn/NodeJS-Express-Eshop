@@ -2,25 +2,25 @@ const getDb = require('../util/database').getDb
 const mongodb = require('mongodb');
 
 class Product {
-  constructor(title,price,description,imageUrl,id){
+  constructor(title,price,description,imageUrl,id,userId){
     this.title= title;
     this.price= price;
     this.description= description;
     this.imageUrl=imageUrl;
-    this._id = new mongodb.ObjectId(id);
+    this._id = id; 
+    this.userId = userId;
   }
 
   save(){
     const db = getDb();
     let dpOp;
     if(this._id){
-      dpOp = db.collection('products').updateOne({_id: this._id},{$set: this});
+      dpOp = db.collection('products').updateOne({_id: new mongodb.ObjectId(this._id)},{$set: {title:this.title,price: this.price, description: this.description, imageUrl:this.imageUrl}});
     }
     else{
-      dpOp = db.collection('products').insertOne(this);
+      dpOp = db.collection('products').insertOne({title: this.title,price : this.price,description : this.description, imageUrl : this.imageUrl,userId:this.userId});
     } 
     return dpOp.then((res)=>{
-      console.log(res);
     })
     .catch(err=>console.log(err))
   }
@@ -31,7 +31,6 @@ class Product {
     .find()
     .toArray()
     .then(products => {
-      console.log(products);
       return products;
     })
     .catch(err=>{
@@ -46,7 +45,6 @@ class Product {
     .find({_id : new mongodb.ObjectId(productId)})
     .next()
     .then(product => {
-      console.log(product);
       return product;
     })
     .catch(err=>{
@@ -58,9 +56,8 @@ class Product {
     const db = getDb();
     return db
     .collection('products')
-    .remove({_id : new mongodb.ObjectId(productId)})
+    .deleteOne({_id : new mongodb.ObjectId(productId)})
     .then(result => {
-      console.log(result);
       return result;
     })
     .catch(err=>{
