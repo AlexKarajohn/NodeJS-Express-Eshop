@@ -1,5 +1,5 @@
 const Product = require('../models/product');
-
+const ObjectId = require('mongodb').ObjectId;
 
 exports.getAddProduct = (req, res, next) => {
   res.render('admin/edit-product', {
@@ -14,7 +14,14 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const price = req.body.price;
   const description = req.body.description;
-  const product = new Product(title, price, description,imageUrl,null, req.user._id );
+  console.log(req.user._id)
+  const product = new Product({
+                                title, 
+                                price, 
+                                description,
+                                imageUrl, 
+                                userId: req.user
+                              });
   product.save()
   .then(result=>{
     console.log('Product Created')
@@ -50,8 +57,13 @@ exports.postEditProduct = (req, res, next) => {
   const updatedPrice = req.body.price;
   const updatedImageUrl = req.body.imageUrl;
   const updatedDesc = req.body.description;
-  const product = new Product(updatedTitle,updatedPrice, updatedDesc,updatedImageUrl, prodId)
-  product.save()
+  Product.findById(prodId).then(product=>{
+    product.title = updatedTitle;
+    product.price = updatedPrice;
+    product.imageUrl = updatedImageUrl;
+    product.desc = updatedDesc
+    return product.save();
+  })
   .then(()=>{
     console.log('Updated Product')
     res.redirect('/admin/products');
@@ -60,7 +72,7 @@ exports.postEditProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
+  Product.find().select('title price imageUrl').populate('userId','name -_id')
   .then(products=>{
     res.render('admin/products', {
       prods: products,
@@ -73,7 +85,7 @@ exports.getProducts = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  Product.removeById(prodId)
+  Product.findByIdAndRemove(prodId)
   .then(()=>{
     console.log('Product Deleted');
     res.redirect('/admin/products');

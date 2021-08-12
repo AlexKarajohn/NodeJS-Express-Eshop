@@ -1,8 +1,8 @@
 const Product = require('../models/product');
-
+const Order = require('../models/order');
 
 exports.getIndex = (req, res, next) => {
-  Product.fetchAll()
+  Product.find()
   .then(products=>{
     res.render('shop/index', {
       prods: products,
@@ -14,7 +14,7 @@ exports.getIndex = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
+  Product.find()
   .then(products=>{
     res.render('shop/product-list', {
       prods: products,
@@ -38,12 +38,12 @@ exports.getProduct = (req, res, next) => {
 };
 
 exports.getCart = (req, res, next) => {
-  req.user.getCart()
-    .then(products => {
+  req.user.populate('cart.items.productId').execPopulate()
+    .then(user => {
       res.render('shop/cart', {
         path: '/cart',
         pageTitle: 'Your Cart',
-        products: products
+        products: user.cart.items
       });
     })
     .catch(err=>console.log(err))
@@ -52,7 +52,6 @@ exports.getCart = (req, res, next) => {
 
 exports.postCart = (req, res, next) => {
   const prodId = req.body.productId;
-  console.log(prodId)
   Product.findById(prodId)
   .then(product=>{
     return req.user.addToCart(product);
@@ -72,8 +71,8 @@ exports.postCartDeleteProduct = (req, res, next) => {
 };
 
 exports.getOrders = (req, res, next) => {
-  //get all products inside every order (due to the relation @ app.js)
-  req.user.getOrders()
+  
+  Order.find({'user.userId': req.user._id})
   .then(orders=>{
     res.render('shop/orders', {
       path: '/orders',
@@ -93,10 +92,28 @@ exports.getCheckout = (req, res, next) => {
 
 
 exports.postMakeOrder = (req,res,next) => {
-  req.user
-  .addOrder()
+  req.user.populate('cart.items.productId').execPopulate()
+  .then(user => {
+    const products = user.cart.items.map((productData)=>{
+      return {
+        quantity: productData.quantity,
+        product: {...productData.productId._doc}   
+      }
+    });
+    const order = new Order({
+      products: products,
+      user: {
+        name: req.user.name,
+        userId: req.user._id
+      }
+    })
+    return order.save()
+  })
+  .then(()=>{
+    req.user.cart.items = [];
+    return req.user.save();
+  })
   .then(result=>{
-    //fetchedCart.destroy();
     res.redirect('/orders');
   })
   .catch(err=>console.log(err));
