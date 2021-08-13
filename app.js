@@ -2,10 +2,10 @@ const dbuname = require('./vars').dbuname;
 const dbpass = require('./vars').dbpass;
 const sessionPass = require('./vars').sessionPass;
 const path = require('path');
-
+const csrf = require('csurf');
 const express = require('express');
 const bodyParser = require('body-parser');
-
+const flash = require('connect-flash');
 const errorController = require('./controllers/error');
 const mongoose =require('mongoose');
 const session = require('express-session');
@@ -21,10 +21,10 @@ const store = new MongoDBStore({
 
 app.set('view engine', 'ejs');
 app.set('views', 'views');
-
- const adminRoutes = require('./routes/admin');
- const authRoutes = require('./routes/auth');
- const shopRoutes = require('./routes/shop');
+const csrfProtection = csrf();
+const adminRoutes = require('./routes/admin');
+const authRoutes = require('./routes/auth');
+const shopRoutes = require('./routes/shop');
 
 const User = require('./models/user');
 
@@ -38,7 +38,8 @@ app.use(session({
         saveUnitialized:false,
         store,
     }))
-
+app.use(csrfProtection);
+app.use(flash());
  app.use((req,res,next)=>{
     if(req.session.user){
         User.findById(req.session.user._id,(err,user)=>{
@@ -53,6 +54,13 @@ app.use(session({
     else
     next();
  })
+app.use((req,res,next)=>{
+    res.locals.isAuthenticated = req.session.isLoggedIn
+    res.locals.csrfToken = req.csrfToken();
+    next()
+})
+
+ //routes
  app.use('/admin', adminRoutes);
  app.use(shopRoutes);
  app.use(authRoutes);

@@ -1,12 +1,24 @@
 const User = require('../models/user');
-
+const nodemailer = require('nodemailer');
+//const sendgridTransport = require('nodemailer-sendgrid-transport')
 const bcrypt = require('bcryptjs');
+const apiKey = require('../vars').transporterAPIkey;
+
+const gmailCred = require('../vars').gmailCred;
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: gmailCred.username,
+        pass: gmailCred.pass,
+        }
+});
 
 exports.getLogin = (req,res,next) => {
     res.render('auth/login',{
         path:'/login',
         pageTitle:'Login',
-        isAuthenticated: req.session.isLoggedIn
+        errorMessage: req.flash('error')
     })
 }
 
@@ -16,6 +28,7 @@ exports.postLogin = (req,res,next) => {
     User.findOne({email:email})
     .then(user=>{
         if(!user){
+            req.flash('error','Invalid Email or Password.')
             return res.redirect('/login')
         }
         bcrypt.compare(password, user.password)
@@ -27,13 +40,16 @@ exports.postLogin = (req,res,next) => {
                 return req.session.save((err)=>{
                     if(err)
                     console.log(err);
+                    req.flash('error','Invalid Email or Password.')
                     res.redirect('/')
                 })
             }
+            req.flash('error','Invalid Email or Password.')
             res.redirect('/login')
         })
         .catch(err=>{
             console.log(err);
+            req.flash('error','Invalid Email or Password.')
             res.redirect('/login');
         })
 
@@ -52,7 +68,7 @@ exports.getSignup = (req, res, next) => {
     res.render('auth/signup', {
       path: '/signup',
       pageTitle: 'Signup',
-      isAuthenticated: false
+      errorMessage: req.flash('error')
     });
   };
   exports.postSignup = (req, res, next) => {
@@ -62,6 +78,7 @@ exports.getSignup = (req, res, next) => {
         User.findOne({email: email})
         .then((user)=>{
             if(user){
+                req.flash('error','Email already exists.')
                 return res.redirect('/signup');
             }
             return bcrypt.hash(password,12)
@@ -71,7 +88,17 @@ exports.getSignup = (req, res, next) => {
                             password:bcrypt.hashSync(password,12),
                             cart:{items:[]}
                         })
-                        return newUser.save().then(()=>res.redirect('/login'))
+                        return newUser.save()
+                            .then(()=>{
+                                res.redirect('/login')
+                                return transporter.sendMail({
+                                    to: email,
+                                    from: gmailCred.username,
+                                    subject:'Sign up Complete',
+                                    html: '<h1>Everything went ok</h1>'
+                                }) 
+                            })
+                            .catch(err=>console.log(err));
                     })
         })
         .catch(err=>console.log(err))

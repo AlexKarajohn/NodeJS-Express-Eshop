@@ -8,7 +8,6 @@ exports.getIndex = (req, res, next) => {
       prods: products,
       pageTitle: 'Index',
       path: '/',
-      isAuthenticated: req.session.isLoggedIn
     });
   })
   .catch(err=>console.log(err));
@@ -21,7 +20,7 @@ exports.getProducts = (req, res, next) => {
       prods: products,
       pageTitle: 'Product List',
       path: '/products',
-      isAuthenticated: req.session.isLoggedIn
+      
     });
   })
   .catch(err=>console.log(err));
@@ -35,7 +34,7 @@ exports.getProduct = (req, res, next) => {
       product: product,
       pageTitle: product.title,
       path: '/products',
-      isAuthenticated: req.session.isLoggedIn
+      
     })
   }).catch(err=>console.log(err))
 };
@@ -50,7 +49,7 @@ exports.getCart = (req, res, next) => {
         path: '/cart',
         pageTitle: 'Your Cart',
         products: user.cart.items,
-        isAuthenticated: req.session.isLoggedIn
+        
       });
     })
     .catch(err=>console.log(err))
@@ -59,7 +58,7 @@ exports.getCart = (req, res, next) => {
       path: '/cart',
       pageTitle: 'Your Cart',
       products: [],
-      isAuthenticated: req.session.isLoggedIn
+
     })
   }
 };
@@ -92,7 +91,7 @@ exports.getOrders = (req, res, next) => {
         path: '/orders',
         pageTitle: 'Your Orders',
         orders,
-        isAuthenticated: req.session.isLoggedIn
+        
       });
     })
     .catch(err=>console.log(err))
@@ -101,7 +100,7 @@ exports.getOrders = (req, res, next) => {
       path: '/orders',
       pageTitle: 'Your Orders',
       orders: [],
-      isAuthenticated: req.session.isLoggedIn
+
     })
   }
 };
@@ -110,7 +109,7 @@ exports.getCheckout = (req, res, next) => {
   res.render('shop/checkout', {
     path: '/checkout',
     pageTitle: 'Checkout',
-    isAuthenticated: req.session.isLoggedIn
+
   });
 };
 
@@ -127,7 +126,7 @@ exports.postMakeOrder = (req,res,next) => {
     const order = new Order({
       products: products,
       user: {
-        name: req.user.name,
+        email: req.user.email,
         userId: req.user._id
       }
     })

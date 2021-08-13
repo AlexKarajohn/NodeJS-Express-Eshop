@@ -240,4 +240,19 @@ form {
   #side-menu-toggle {
     display: none;
   }
+  .user-message{
+    width:30rem;
+  }
+}
+.user-message {
+  margin: auto;
+  width: 90%;
+  border:1px solid #000;
+  padding:3px;
+  background:#645c75;
+  border-radius:3px;
+  text-align:center;
+}
+.user-message--error{
+  background:red;
 }
