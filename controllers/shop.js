@@ -7,7 +7,8 @@ exports.getIndex = (req, res, next) => {
     res.render('shop/index', {
       prods: products,
       pageTitle: 'Index',
-      path: '/'
+      path: '/',
+      isAuthenticated: req.session.isLoggedIn
     });
   })
   .catch(err=>console.log(err));
@@ -19,7 +20,8 @@ exports.getProducts = (req, res, next) => {
     res.render('shop/product-list', {
       prods: products,
       pageTitle: 'Product List',
-      path: '/products'
+      path: '/products',
+      isAuthenticated: req.session.isLoggedIn
     });
   })
   .catch(err=>console.log(err));
@@ -32,22 +34,34 @@ exports.getProduct = (req, res, next) => {
     res.render('shop/product-detail', {
       product: product,
       pageTitle: product.title,
-      path: '/products'
+      path: '/products',
+      isAuthenticated: req.session.isLoggedIn
     })
   }).catch(err=>console.log(err))
 };
 
 exports.getCart = (req, res, next) => {
-  req.user.populate('cart.items.productId').execPopulate()
+  if(req.user){
+  req.user
+    .populate('cart.items.productId')
+    .execPopulate()
     .then(user => {
       res.render('shop/cart', {
         path: '/cart',
         pageTitle: 'Your Cart',
-        products: user.cart.items
+        products: user.cart.items,
+        isAuthenticated: req.session.isLoggedIn
       });
     })
     .catch(err=>console.log(err))
-
+  }else {
+    res.render('shop/cart', {
+      path: '/cart',
+      pageTitle: 'Your Cart',
+      products: [],
+      isAuthenticated: req.session.isLoggedIn
+    })
+  }
 };
 
 exports.postCart = (req, res, next) => {
@@ -71,22 +85,32 @@ exports.postCartDeleteProduct = (req, res, next) => {
 };
 
 exports.getOrders = (req, res, next) => {
-  
-  Order.find({'user.userId': req.user._id})
-  .then(orders=>{
+  if(req.user){
+    Order.find({'user.userId': req.user._id})
+    .then(orders=>{
+      res.render('shop/orders', {
+        path: '/orders',
+        pageTitle: 'Your Orders',
+        orders,
+        isAuthenticated: req.session.isLoggedIn
+      });
+    })
+    .catch(err=>console.log(err))
+  }else{
     res.render('shop/orders', {
       path: '/orders',
       pageTitle: 'Your Orders',
-      orders
-    });
-  })
-  .catch(err=>console.log(err))
+      orders: [],
+      isAuthenticated: req.session.isLoggedIn
+    })
+  }
 };
 
 exports.getCheckout = (req, res, next) => {
   res.render('shop/checkout', {
     path: '/checkout',
-    pageTitle: 'Checkout'
+    pageTitle: 'Checkout',
+    isAuthenticated: req.session.isLoggedIn
   });
 };
 
