@@ -28,7 +28,6 @@ app.set('views', 'views');
 
 const User = require('./models/user');
 
-
 app.use(bodyParser.urlencoded({ extended: false }));
 //serve static path for css etc
 app.use(express.static(path.join(__dirname, 'public')));
@@ -63,19 +62,6 @@ app.use(errorController.get404);
 mongoose.connect(MONGODB_URI)
 .then(()=>{
     console.log('MongoDB connected');
-    User.findOne({name:"alex"}).then((user)=>{
-        if(!user)
-        {
-            const user = new User({
-                name : "alex",
-                email : "alex@alex.gr",
-                cart: {
-                    items:[]
-                }
-            })
-            user.save();
-        }
-    })
     app.listen(3000);
 })
 .catch(err=>console.log(err));
