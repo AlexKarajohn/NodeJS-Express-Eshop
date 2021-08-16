@@ -97,7 +97,12 @@ exports.postLogin = (req,res,next) => {
 
             
     })
-    .catch(err=>console.log(err))
+    .catch(err=>{
+        console.log(err)
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+      });
 }
 exports.postLogout = (req,res,next) => {
     req.session.destroy((err)=>{
@@ -151,7 +156,12 @@ exports.getSignup = (req, res, next) => {
                                 //     html: '<h1>Everything went ok</h1>'
                                 // }) 
                             })
-                            .catch(err=>console.log(err));
+                            .catch(err=>{
+                                console.log(err)
+                                const error = new Error(err);
+                                error.httpStatusCode = 500;
+                                return next(error);
+                              });
                     })    
   };
 
@@ -195,7 +205,12 @@ exports.getSignup = (req, res, next) => {
                 `
             }) 
         })
-        .catch(err=>console.log(err))
+        .catch(err=>{
+            console.log(err)
+            const error = new Error(err);
+            error.httpStatusCode = 500;
+            return next(error);
+          });
     })
   }
   exports.getNewPassword=(req,res,next)=>{
@@ -212,7 +227,12 @@ exports.getSignup = (req, res, next) => {
             passwordToken: token
           });
     })
-    .catch(err=>console.log(err));
+    .catch(err=>{
+        console.log(err)
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+      });
   }
   exports.postNewPassword=(req,res,next)=>{
     const newPassword = req.body.password;
@@ -245,5 +265,10 @@ exports.getSignup = (req, res, next) => {
             `
         })
     })
-    .catch(err=>console.log(err))
+    .catch(err=>{
+        console.log(err)
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+      });
   }
