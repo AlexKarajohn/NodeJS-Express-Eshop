@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const apiKey = require('../vars').transporterAPIkey;
 
 const gmailCred = require('../vars').gmailCred;
+const crypto = require('crypto');
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -104,3 +105,96 @@ exports.getSignup = (req, res, next) => {
         .catch(err=>console.log(err))
     
   };
+
+  exports.getReset = (req,res,next) =>{
+    res.render('auth/reset', {
+        path: '/reset',
+        pageTitle: 'Reset Password',
+        errorMessage: req.flash('error')
+      });
+  }
+  exports.postReset = (req,res,next) =>{
+    crypto.randomBytes(32,(err, buffer)=>{
+        if(err)
+        {
+            console.log(err);
+            return res.redirect('/reset');
+        }
+        const token = buffer.toString('hex');
+        User.findOne({email:req.body.email})
+        .then((user)=>{
+            if(!user)
+                {
+                    req.flash('error','User Not Found');
+                    return res.redirect('/reset')
+                }
+            user.resetToken = token;
+            user.resetTokenExpiration = Date.now()+ 3600000;
+            return user.save();
+        })
+        .then((result)=>{
+            console.log('sending email & redirecting')
+            console.log(gmailCred.username)
+            res.redirect('/login');
+            transporter.sendMail({
+                to: req.body.email,
+                from: gmailCred.username,
+                subject:'Password Reset',
+                html: `
+                    <p> You Requested a password reset</p>
+                    <p> click this <a href="http://localhost:3000/reset/${token}"> link for a new password</a></p>
+                `
+            }) 
+        })
+        .catch(err=>console.log(err))
+    })
+  }
+  exports.getNewPassword=(req,res,next)=>{
+    const token = req.params.token;
+    User.findOne({resetToken:token,resetTokenExpiration:{$gt: Date.now()}})
+    .then(user=>{
+        if(!user)
+            return res.redirect('/')
+        res.render('auth/new-password', {
+            path: '/new-password',
+            pageTitle: 'Reset Password',
+            errorMessage: req.flash('error'),
+            userId: user._id.toString(),
+            passwordToken: token
+          });
+    })
+    .catch(err=>console.log(err));
+  }
+  exports.postNewPassword=(req,res,next)=>{
+    const newPassword = req.body.password;
+    const userId = req.body.userId;
+    const passwordToken = req.body.passwordToken;
+    let resetUser;
+    User.findOne({
+        resetToken:passwordToken,
+        resetTokenExpiration: {$gt: Date.now()},
+        _id: userId
+    })
+    .then((user)=>{
+        resetUser= user;
+        return bcrypt.hash(newPassword,12)
+    })
+    .then((hashedPassword)=>{
+        resetUser.password = hashedPassword;
+        resetUser.resetToken = undefined;
+        resetUser.resetTokenExpiration = undefined;
+        return resetUser.save();
+    })
+    .then(result=>{
+        res.redirect('/login');
+        transporter.sendMail({
+            to: resetUser.email,
+            from: gmailCred.username,
+            subject:'Password Reset',
+            html: `
+                <p> You have reset your password.</p>
+            `
+        })
+    })
+    .catch(err=>console.log(err))
+  }
