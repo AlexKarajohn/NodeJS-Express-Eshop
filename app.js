@@ -9,8 +9,8 @@ const flash = require('connect-flash');
 const errorController = require('./controllers/error');
 const mongoose =require('mongoose');
 const session = require('express-session');
-//this library is used to make a session save in mongo
 const MongoDBStore = require('connect-mongodb-session')(session);
+const multer = require('multer');
 const MONGODB_URI = `mongodb+srv://${dbuname}:${dbpass}@cluster0.czne7.mongodb.net/shop?retryWrites=true&w=majority`
 const app = express();
 //here we create a store to be used for our sessions
@@ -18,6 +18,22 @@ const store = new MongoDBStore({
     uri: MONGODB_URI,
     collection: 'sessions',
 });
+//multer options objects
+const fileStorage = multer.diskStorage({
+    destination: (req,file, cb)=>{
+        cb(null,'images')
+    },
+    filename: (req,file,cb)=>{
+        cb(null, new Date().toISOString() + '-' + file.originalname );
+    },
+});
+const fileFilter = (req,file,cb) => {
+    if(file.mimetype ==='image/png' || file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg' )
+    cb(null,true)
+    else
+    cb(null,false);
+}
+
 
 app.set('view engine', 'ejs');
 app.set('views', 'views');
@@ -29,8 +45,10 @@ const shopRoutes = require('./routes/shop');
 const User = require('./models/user');
 
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(multer({storage: fileStorage,fileFilter: fileFilter}).single('image'))
 //serve static path for css etc
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/images',express.static(path.join(__dirname, 'images')));
 //secret is the key for the cookie & session // add the store so the sessions will be saved in the db
 app.use(session({
         secret:sessionPass, 
@@ -88,7 +106,7 @@ app.use(errorController.get404);
 
 app.use((error,req,res,next)=>{
     //res.status(error.httpStatusCode).render(...);
-    console.log('500')
+    console.log(error)
     res.redirect('/500');
 })
 

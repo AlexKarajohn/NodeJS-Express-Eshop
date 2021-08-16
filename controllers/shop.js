@@ -1,6 +1,8 @@
 const Product = require('../models/product');
 const Order = require('../models/order');
-
+const fs = require('fs');
+const path = require('path');
+const PDFDocument = require('pdfkit')
 exports.getIndex = (req, res, next) => {
   Product.find()
   .then(products=>{
@@ -181,3 +183,47 @@ exports.postMakeOrder = (req,res,next) => {
     return next(error);
   });
 };
+exports.getInvoice = (req,res,next) =>{
+  const orderId = req.params.orderId;
+  
+  const invoiceName = `invoice-${orderId}.pdf`;
+  const invoicePath = path.join('data','invoices',invoiceName);
+
+  Order.findById(orderId)
+  .then(order=>{
+    if(!order)
+      return next(new Error('No order Found.'));
+    if(order.user.userId.toString() !== req.user._id.toString())
+      return next(new Error('Unauthorized.'));
+      const pdfDoc = new PDFDocument();
+      res.setHeader('Content-Type' ,'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"')
+      pdfDoc.pipe(fs.createWriteStream(invoicePath));
+      pdfDoc.pipe(res);
+      pdfDoc.fontSize(26).text('Invoice',{underline:true});
+      pdfDoc.fontSize(14).text('------------------------')
+      let totalPrice = 0;
+      console.log(order)
+      order.products.forEach(product=>{
+        totalPrice +=  product.quantity * product.product.price
+        pdfDoc.fontSize(14).text(product.product.title + ' - ' + product.quantity + ' x $' + product.product.price )
+      })
+      pdfDoc.text('------------------------')
+      pdfDoc.fontSize(20).text(`Total Price $${totalPrice}`)
+      pdfDoc.end();
+    // fs.readFile(invoicePath,(err,data)=>{
+    //     if(err){
+    //       return next(err);
+    //     }
+    //     res.setHeader('Content-Type' ,'application/pdf');
+    //     res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"')
+    //     res.send(data);
+    // })  
+    //instead of us reading the file AND THEN serving it, we stream it w/o preloading it to server RAM
+    // const file = fs.createReadStream(invoicePath);
+
+    // file.pipe(res);
+  })
+  .catch(err=>next(err))
+  
+}

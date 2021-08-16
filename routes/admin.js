@@ -24,9 +24,6 @@ router.post('/add-product'
                     throw new Error ('Title must be at least 5 characters')
                 return true
             }),
-        body('imageUrl','Please Enter a valid image Url')
-            .trim()
-            .isURL(),
         body('price','Please Enter a valid Price')
             .trim()
             .isCurrency({require_symbol:false,allow_decimal:true,require_decimal:false,digits_after_decimal:[2]}),
@@ -51,9 +48,6 @@ router.post('/edit-product', isAuth,
                     throw new Error ('Title must be at least 5 characters')
                 return true
             }),
-        body('imageUrl','Please Enter a valid image Url')
-            .trim()
-            .isURL(),
         body('price','Please Enter a valid Price')
             .trim()
             .isCurrency({require_symbol:false,allow_decimal:true,require_decimal:false,digits_after_decimal:[2]}),
